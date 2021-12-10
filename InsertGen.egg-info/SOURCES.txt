@@ -1,0 +1,6 @@
+main.py
+setup.py
+InsertGen.egg-info/PKG-INFO
+InsertGen.egg-info/SOURCES.txt
+InsertGen.egg-info/dependency_links.txt
+InsertGen.egg-info/top_level.txt
