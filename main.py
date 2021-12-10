@@ -8,6 +8,7 @@ import time
 import geonamescache
 import random as r
 
+
 def print_hi(name):
     # Use a breakpoint in the code line below to debug your script.
     print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
@@ -21,7 +22,7 @@ def str_time_prop(start, end, time_format, prop):
 
 
 def random_date(start, end, prop):
-    return str_time_prop(start, end, '%m/%d/%Y %I:%M %p', prop)
+    return str_time_prop(start, end, '%d/%m/%Y %I:%M %p', prop)
 
 
 def generate():
@@ -29,53 +30,68 @@ def generate():
     colors = ["Rouge", "Bleu", "Vert", "Jaune", "Violet", "Orange", "Rose", "Marron", "Gris", "Cyan", "Turquoise",
               "Bordeau", "Argent", "Mauve", "Blanc", "Noir"]
 
+    li_imma = []
+
     f_ville = open("ville.sql", "w")
     f_convention = open("convention.sql", "w")
     f_parking = open("parking.sql", "w")
     f_voiture = open("voiture.sql", "w")
+    f_visiteur = open("visiteur.sql", "w")
 
     gc = geonamescache.GeonamesCache()
     c = gc.get_cities()
     fr_cities = [c[key]['name'] for key in list(c.keys()) if c[key]['countrycode'] == 'FR']
 
     for i in range(length):
-        code_postal = r.sample(range(10000), length)
-        habitants = r.randrange(0, 10000000)
+        code_postal = r.sample(range(10000, 99999), length)
+        habitants = r.randrange(1, 10000000)
         num_conv = r.sample(range(1000), length)
-        places = r.randrange(0, 100000)
+        places = r.randrange(10, 100000)
         num_parking = r.sample(range(100), length)
-        places_parking = r.randrange(0, 10000)
+        places_parking = r.randrange(1, 10000)
         place_type = r.randrange(0, 3)
-        imma = r.choice(string.ascii_uppercase) + r.choice(string.ascii_uppercase) + "-" + \
-               str(r.randrange(0, 9)) + str(r.randrange(0, 9)) + str(r.randrange(0, 9)) + \
-               "-" + r.choice(string.ascii_uppercase) + r.choice(string.ascii_uppercase)
+        num_vis = r.sample(range(1000, 10000), length)
+        vip = r.randrange(0, 9)
+
+        while True:
+            imma = r.choice(string.ascii_uppercase) + r.choice(string.ascii_uppercase) + "-" + \
+                   str(r.randrange(0, 9)) + str(r.randrange(0, 9)) + str(r.randrange(0, 9)) + \
+                   "-" + r.choice(string.ascii_uppercase) + r.choice(string.ascii_uppercase)
+            if not li_imma.__contains__(imma):
+                break
 
         query_ville = "INSERT INTO $T VALUES($0, $1, $2);" + "\n"
         query_ville = query_ville.replace("$T", "Ville") \
             .replace("$0", str(code_postal.__getitem__(i))) \
-            .replace("$1", "'" + fr_cities.__getitem__(r.randrange(0, len(fr_cities))) + "'") \
+            .replace("$1", "'" + str(fr_cities.__getitem__(r.randrange(0, len(fr_cities)))).replace("'", " ") + "'") \
             .replace("$2", "'" + str(habitants) + "'")
 
         query_convention = "INSERT INTO $T VALUES($0, $1, $2, $3);" + "\n"
         query_convention = query_convention.replace("$T", "Convention") \
-            .replace("$0", str(num_conv)) \
-            .replace("$1", "'" + random_date("1/1/2020 1:30 AM", "09/12/2021 5:30 AM", 1) + "'") \
+            .replace("$0", str(num_conv.__getitem__(i))) \
+            .replace("$1", "'" + random_date("1/1/2020 1:30 AM", "09/12/2021 5:30 AM", r.random()).split(" ").__getitem__(0) + "'") \
             .replace("$2", str(places)) \
-            .replace("$3", str(code_postal))
+            .replace("$3", str(code_postal.__getitem__(i)))
 
         query_parking = "INSERT INTO $T VALUES($0, $1, $2, $3);" + "\n"
         query_parking = query_parking.replace("$T", "Parking") \
-            .replace("$0", str(num_parking)) \
+            .replace("$0", str(num_parking.__getitem__(i))) \
             .replace("$1", str(places_parking)) \
             .replace("$2", "'" + ("VOITURE" if place_type == 0 else ("DEUX_ROUES" if place_type == 1 else "BUS")) + "'") \
-            .replace("$3", str(num_conv))
+            .replace("$3", str(num_conv.__getitem__(i)))
 
         query_voiture = "INSERT INTO $T VALUES($0, $1, $2, $3);" + "\n"
         query_voiture = query_voiture.replace("$T", "Voiture") \
             .replace("$0", "'" + imma + "'") \
             .replace("$1", "'" + colors.__getitem__(r.randrange(0, len(colors))) + "'") \
             .replace("$2", "-") \
-            .replace("$3", str(num_parking))
+            .replace("$3", str(num_parking.__getitem__(i)))
+
+        query_visiteur = "INSERT INTO $T VALUES($0, $1, $2);" + "\n"
+        query_visiteur = query_visiteur.replace("$T", "Visiteur") \
+            .replace("$0", str(num_vis.__getitem__(i))) \
+            .replace("$1", "'VIP'" if vip < 2 else "'Standard'") \
+            .replace("$2", "'" + str(imma) + "'")
 
         print("SQL tuple in ville.sql successfully generated")
         f_ville.write(query_ville)
@@ -88,6 +104,9 @@ def generate():
 
         print("SQL tuple in voiture.sql successfully generated")
         f_voiture.write(query_voiture)
+
+        print("SQL tuple in visiteur.sql successfully generated")
+        f_visiteur.write(query_visiteur)
 
     f_ville.close()
     f_convention.close()
